@@ -116,7 +116,17 @@ app.patch('/api/patients/:id', auth, async (req, res) => {
   let i = 1;
   const allowed = ['status','bed','doctor_id','nurse_id','diagnosis','icd_code',
     'chief_complaint','blood_group','allergies','admission_type','diag_type'];
-  allowed.forEach(k => { if (b[k] !== undefined) { fields.push(`${k}=$${i++}`); vals.push(b[k]); } });
+  allowed.forEach(k => {
+    if (b[k] !== undefined) {
+      fields.push(`${k}=$${i++}`);
+      // doctor_id and nurse_id must be integers or null
+      if ((k === 'doctor_id' || k === 'nurse_id') && b[k] !== null) {
+        vals.push(parseInt(b[k]) || null);
+      } else {
+        vals.push(b[k]);
+      }
+    }
+  });
   if (!fields.length) return res.json({ ok: true });
   vals.push(req.params.id);
   try {
