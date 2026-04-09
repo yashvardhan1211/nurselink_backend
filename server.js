@@ -277,9 +277,11 @@ app.post('/api/labs/:pid', auth, async (req, res) => {
 app.patch('/api/labs/:id/result', auth, async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'No DB' });
   try {
+    const status = req.body.status || 'Result Available';
+    const result = req.body.result !== undefined ? req.body.result : null;
     const r = await pool.query(
-      "UPDATE lab_orders SET result=$1,status='Result Available' WHERE id=$2 RETURNING *",
-      [req.body.result, req.params.id]
+      'UPDATE lab_orders SET result=$1,status=$2 WHERE id=$3 RETURNING *',
+      [result, status, req.params.id]
     );
     io.emit('labs:result', { ...r.rows[0] });
     res.json(r.rows[0]);
