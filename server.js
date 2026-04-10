@@ -62,9 +62,36 @@ app.post('/api/staff', auth, async (req, res) => {
     const hash = await bcrypt.hash(password || 'password123', 10);
     const r = await pool.query(
       'INSERT INTO staff(name,role,department,specialty,emp_id,email,password_hash) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-      [name, role, department||'', specialty||'', emp_id||'', email||'', hash]
+      [name, role, department||'', specialty||department||'', emp_id||'', email||'', hash]
     );
     res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/staff/:id', auth, async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'No DB' });
+  const { name, role, department, specialty, emp_id, password } = req.body;
+  try {
+    const fields = [], vals = [];
+    let i = 1;
+    if (name)       { fields.push(`name=$${i++}`);       vals.push(name); }
+    if (role)       { fields.push(`role=$${i++}`);       vals.push(role); }
+    if (department) { fields.push(`department=$${i++}`); vals.push(department); }
+    if (specialty)  { fields.push(`specialty=$${i++}`);  vals.push(specialty); }
+    if (emp_id)     { fields.push(`emp_id=$${i++}`);     vals.push(emp_id); }
+    if (password)   { const h = await bcrypt.hash(password, 10); fields.push(`password_hash=$${i++}`); vals.push(h); }
+    if (!fields.length) return res.json({ ok: true });
+    vals.push(req.params.id);
+    const r = await pool.query(`UPDATE staff SET ${fields.join(',')} WHERE id=$${i} RETURNING *`, vals);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/staff/:id', auth, async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'No DB' });
+  try {
+    await pool.query('DELETE FROM staff WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
