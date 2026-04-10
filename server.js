@@ -306,9 +306,11 @@ app.patch('/api/labs/:id/result', auth, async (req, res) => {
   try {
     const status = req.body.status || 'Result Available';
     const result = req.body.result !== undefined ? req.body.result : null;
+    const report_url = req.body.report_url || null;
+    const report_name = req.body.report_name || null;
     const r = await pool.query(
-      'UPDATE lab_orders SET result=$1,status=$2 WHERE id=$3 RETURNING *',
-      [result, status, req.params.id]
+      'UPDATE lab_orders SET result=$1,status=$2,report_url=$3,report_name=$4 WHERE id=$5 RETURNING *',
+      [result, status, report_url, report_name, req.params.id]
     );
     io.emit('labs:result', { ...r.rows[0] });
     res.json(r.rows[0]);
